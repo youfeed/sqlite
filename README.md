@@ -14,6 +14,17 @@ Sqlite3 插件：它是对标`fopen 函数`的，性能还是不错了，像一�
 ```php
 composer require youloge/sqlite
 ```
+> 到 app/functions.php 添加一个助手函数
+``` php  
+use Youloge\Sqlite\Sqlite;     
+if(!function_exists('sqlite')){                  
+  function sqlite($dir,$file,$table){                     
+    return new Sqlite($dir,$file,$table);               
+  }    
+}
+// 其他地方 
+$db = sqlite('','',''); // 这样子使用 wenbman的助手函数是个好东西
+```
 
 ### 配置文件 `Sqlite 没什么远程管理工具 配置文件是关键的关键`
 
