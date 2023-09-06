@@ -8,6 +8,7 @@
  */
 return [
   // 以下插件保留目录: 方便以后扩展使用 
+  'test'=>'id INTEGER PRIMARY KEY,status varhcar(24),created text(12)',
   // :memory: 内存数据库
   'logs'=>[
     'error'=>'id INTEGER AUTOINCREMENT,sql text(500),status varhcar(24),created text(12)',

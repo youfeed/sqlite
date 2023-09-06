@@ -24,7 +24,7 @@ class Sqlite
       self::$CONFIG = $config;
       self::$SQLITE = $sqlite;
     }
-    @['absolute'=>$absolute,'logs'=>$logs,'format'=>$format] = self::$CONFIG;
+    @['absolute'=>$absolute,'format'=>$format] = self::$CONFIG;
     // 检查目录
     $trim = trim($dir,'./:');
     $replace = str_replace("/", ".", $trim);
@@ -32,7 +32,7 @@ class Sqlite
     if($field==null) throw new \Exception('目录错误或未定义数据表');
     $db = new \SQLite3("$absolute/$trim/$file.$format");
     ($table && $field) && $db->exec("create table if not exists $table($field);");
-    print_r($field);
+    // print_r($field);
     // 分配UUID + 初始参数 
     $uuid = session_create_id();
     self::$uuid = $uuid;
@@ -91,8 +91,8 @@ class Sqlite
   // where 
   public function where($params,$default=[]){
     foreach($params as $key=>$val){
-      $default[] = sprintf("'%s' = '%s'",$key,$val);
-    }
+      $default[] = sprintf("`%s` = %s",$key,is_string($val) ? "'$val'" : $val);
+    } 
     self::$POOL[self::$uuid]['where'] = sprintf("WHERE %s",implode(' AND ',$default));
     return $this;
   }
@@ -184,7 +184,7 @@ class Sqlite
   private function ToWhere($array,$separator = 'AND')
   {
     foreach($array as $k=>$v){
-      $list[] = sprintf("'%s' = %s",$k,is_string($v) ? "'$v'" : $v);
+      $list[] = sprintf("`%s` = %s",$k,is_string($v) ? "'$v'" : $v);
     }
     return implode(" $separator ",$list);
   }
