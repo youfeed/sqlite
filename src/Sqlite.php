@@ -7,7 +7,6 @@ use Webman\Exception; // NotFoundException
 
 class Sqlite
 {
-  protected static $uuid2;
   // 单例对象
   protected static $_instance = null;
   // 数据库连接池
@@ -16,21 +15,11 @@ class Sqlite
   protected static $POOL;
   private static $CONFIG;
   private static $SQLITE;
-
-  private static $_config = [];
-  // 
-  protected  $_db = null;
-  protected  $_table = '';
-  protected  $_select = '*';
-  protected  $_order = '';
-  protected  $_where = '';
-  protected  $_offset = 0;
-  protected  $_limit = 10;
   // 初始化DB文件
   public function __construct($dir,$file,$table){
     if(!isset(self::$CONFIG)){
       var_export('self::$CONFIG');
-      $config = config('plugin.youloge.sqlite.app'); // 
+      $config = config('plugin.youloge.sqlite.app');
       $sqlite = config('plugin.youloge.sqlite.sqlite');
       self::$CONFIG = $config;
       self::$SQLITE = $sqlite;
@@ -80,7 +69,6 @@ class Sqlite
   }
   // 销毁实例
   public function __destruct(){
-    print_r("__destruct - ------".self::$uuid);
     self::$POOL[self::$uuid]['DB']->close();
     unset(self::$POOL[self::$uuid]);
   }
@@ -89,7 +77,7 @@ class Sqlite
     @['DB'=>$db] = self::$POOL[self::$uuid];
     return $db;
   }
-  // test $db = new SQLite3();
+  // version
   public function version()
   {
     @['DB'=>$db] = self::$POOL[self::$uuid];
@@ -124,6 +112,7 @@ class Sqlite
     self::$POOL[self::$uuid]['set'] = [$keys,$vals,$sets??''];
     return $this;
   }
+  // limit
   public function limit($int){
     self::$POOL[self::$uuid]['limit'] = "LIMIT $int";
     return $this;
@@ -189,7 +178,7 @@ class Sqlite
   }
   // ToOrder
   private function ToOrder($array){
-    return implode(' AND ',$array);
+    return implode(',',$array);
   }
   // ToWhere
   private function ToWhere($array,$separator = 'AND')
