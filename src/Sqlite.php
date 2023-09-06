@@ -184,7 +184,7 @@ class Sqlite
   private function ToWhere($array,$separator = 'AND')
   {
     foreach($array as $k=>$v){
-      $list[] = sprintf("'%s' = '%s'",$k,$v);
+      $list[] = sprintf("'%s' = %s",$k,is_string($v) ? "'$v'" : $v);
     }
     return implode(" $separator ",$list);
   }
