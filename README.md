@@ -41,6 +41,12 @@ return [
 ];
 
 ```
+### 配置数据表 关键
+
+-  `Sqlite 是以为文件作为数据库`，一个文件就是一个完整的数据库，你`必须做到`预先把数据表设计好：
+- 支持复杂目录`www/hello/word.user` 点文件夹也支持* `.user` 别和`app.php > format` 重复防止`同名文件夹-文件名`
+- 后续考虑`sqlite 配置`整合到`absolute 绝对路径里`去加载，可以更好的分布式共享：例如丢到`挂载盘共享`
+
 位置：config/plugin/youloge/sqlite.php
 ```php
 /**
@@ -56,17 +62,10 @@ return [
 ];
 ```
 
-### 配置数据表 关键
 
->  `Sqlite 是以为文件作为数据库`，一个文件就是一个完整的数据库，你`必须做到`预先把数据表设计好：
-
-例子：在项目目录下建立用户表
-```sql
-uuid text(64) primary key,name varhcar(32),avatar varhcar(128),mail varhcar(128),created text(12),updated text(12)
-```
-- 
 
 ### 开始使用 
+
 #### 以相对路径 目录`hello/word` 文件`profile` 表名`user,login，wallet` 为例
 
 连接数据库
@@ -74,6 +73,9 @@ uuid text(64) primary key,name varhcar(32),avatar varhcar(128),mail varhcar(128)
 ```
 // 必须与config/plugin/youloge/sqlite.php配置文件对应
 $db = sqlite('目录/目录','文件名','表名');
+$db = sqlite('/','文件名','表名'); // 根目录
+$db = sqlite(':','文件名','表名'); // 根目录
+$db = sqlite('.','文件名','表名'); // 根目录
 ```
 #### 插入数据
 插入一条数据
@@ -151,11 +153,12 @@ echo $count_array; // ['list'=>[],'count'=>0];
 - []`order` - 设置排序 默认空 `id desc` `id asc` 只支持
 - ([][])`where` - [参数一],[参数二] 参数一：转成 `'key'`=`'val'`在`AND`,参数二：直接`AND`
 - ([]/[[],[]])`set` - 设置数据[] `insert` 解析成 SET`keys`VALUE(`values`),(`values`);`update`解析成`key`=`val`
+- (string)`table` - 切换表名  一个表文件可以有多个表：这里的切换表，不验证表是否存在*
 
 
 > 链式调用相同配置，只有最后一组生效 $db()->limit(50)->limit(40)->limit(20)->result_array(); // 只生效limit(20)
 
-> 数据表`where 条件`原样输入, 例如`id > 100`和`time >= 10000`等参数
+> 数据表`where 条件 [参数二]` 原样输入, 例如`id > 100`和`time >= 10000`等参数
 
 ### 调用结果函数
 - `insert` - 插入数据

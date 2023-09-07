@@ -23,16 +23,15 @@ class Sqlite
       $sqlite = config('plugin.youloge.sqlite.sqlite');
       self::$CONFIG = $config;
       self::$SQLITE = $sqlite;
+      $this->directory();
     }
     @['absolute'=>$absolute,'format'=>$format] = self::$CONFIG;
     // 检查目录
     $trim = trim($dir,'./:');
-    $replace = str_replace("/", ".", $trim);
-    @[$table=>$field] = config($replace ? "plugin.youloge.sqlite.sqlite.$replace" : "plugin.youloge.sqlite.sqlite");
+    @[$table=>$field] = $this->getField($trim);
     if($field==null) throw new \Exception('目录错误或未定义数据表');
     $db = new \SQLite3("$absolute/$trim/$file.$format");
     ($table && $field) && $db->exec("create table if not exists $table($field);");
-    // print_r($field);
     // 分配UUID + 初始参数 
     $uuid = session_create_id();
     self::$uuid = $uuid;
@@ -48,8 +47,25 @@ class Sqlite
       'offset'=>'OFFSET 0',
     ];
     // 是否首次
-    if(self::$_instance){ var_export(["单例:$uuid"]); return self::$_instance; }
-    // 映射 + 创建 文件目录
+    if(self::$_instance){ return self::$_instance; }
+    // 弹实例化
+    self::$_instance = $this;
+  }
+  // 递归配置
+  private function getField($trim){
+    $explode = explode('/',$trim);$sqlite = self::$SQLITE;
+    $shift = array_shift($explode);
+    while ($shift){
+      @[$shift=>$sqlite] = $sqlite;
+      $shift = array_shift($explode);
+    }
+    return $sqlite;
+  }
+  // 映射 + 创建 文件目录
+  private function directory(){
+    var_export('映射 + 创建 文件目录');
+    $sqlite = self::$SQLITE;
+    @['absolute'=>$absolute] = self::$CONFIG;
     $list = [];
     $iterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($sqlite), \RecursiveIteratorIterator::SELF_FIRST);
     foreach ($iterator as $key => $value) {
@@ -65,7 +81,6 @@ class Sqlite
       is_dir("$absolute/$relative") || mkdir("$absolute/$relative",0777,true);
     }
     var_export($list);
-    self::$_instance = $this;
   }
   // 销毁实例
   public function __destruct(){
@@ -82,6 +97,11 @@ class Sqlite
   {
     @['DB'=>$db] = self::$POOL[self::$uuid];
     return $db->version(); 
+  }
+  // table
+  public function table($string){
+    self::$POOL[self::$uuid]['table'] = $string;
+    return $this;
   }
   // select 
   public function select($params='*'){
