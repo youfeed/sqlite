@@ -1,9 +1,13 @@
-# Youloge.Sqlite Webman 基础插件
+# Youloge.Sqlite重构版本 Webman 基础插件 
 
-### 项目介绍
+### 项目介绍 
 
 Sqlite3 插件：它是对标`fopen 函数`的，性能还是不错了，像一般性的个人博客，企业官网，完全都是可以hold住的。
-其中`Sqlite 的内存型`反应时间是`ns`级别的，其他数据库都会有网络开销可以做到`ms`级别。
+其中`Sqlite 的内存型`反应时间是`ns`级别的，其他数据库都会有网络开销可以做到`ms`级别。代码很少就100多行
+
+> 这二天帮代码升级了下，直接继承`SQLite3`类进行扩展官方类[php.net/sqlite3](https://www.php.net/manual/en/book.sqlite3.php)，我在官方基础上扩展了几个功能，从而实现自动表映射。同时将表配置文件放入到数据库同目录下，迁移时候直接复制即可。
+
+- `Sqlite`的优缺点客观看待，他真的非常适合打日志~
 
 ### 项目地址
 
@@ -18,149 +22,125 @@ composer require youloge/sqlite
 ``` php  
 use Youloge\Sqlite\Sqlite;     
 if(!function_exists('sqlite')){                  
-  function sqlite($dir,$file,$table){                     
-    return new Sqlite($dir,$file,$table);               
-  }    
+  function sqlite($dir,$file){                     
+    return new Sqlite($dir,$file);               
+  }
 }
-// 其他地方 
-$db = sqlite('','',''); // 这样子使用 wenbman的助手函数是个好东西
+// 任意地方 使用
+$db = sqlite('文件目录/目录','文件名(不包含后缀)'); // 返回是一个`SQLite3 类`
+$db::version(); // 返回版本/配置
+var_export(get_class_methods($db)); // 打印全部方法
+
 ```
 
-### 配置文件 `Sqlite 没什么远程管理工具 配置文件是关键的关键`
+### 配置文件
 
-位置：config/plugin/youloge/app.php
-
+- Sqlite 没什么远程管理工具 配置文件是关键的关键
+- 位置：config/plugin/youloge/app.php
+- 将`绝对路径`配置到挂载盘之类的可以很好的和`其他日志服务`相结合
 ```php
 <?php
 return [
-    'enable' => true,
-    // 绝对路径 通过`__FILE__ ` 查看系统目录，放到一个你觉得合适的位置 **不要公开**
-    'absolute'=>'C:/Users/Micateam/Desktop/youloge/composer/public',
-    // 文件后缀 你改成mp4都没问题 Sqlite3 能识别
-    'format'=>'db'
+  'enable' => true,
+  // 绝对路径 需要 / 开头 结尾 不需要
+  'absolute'=>'C:/Users/Micateam/Desktop/youloge/composer/public',
+  // 相对路径 数据库配置`JSON`格式 + MD5后续加入 方式配置变动
+  'dump'=>'youloge.sqlite.json',
+  // 文件后缀 你改成mp4都没问题 Sqlite3 能识别
+  'format'=>'db'
 ];
 
 ```
-### 配置数据表 关键
-
+### 配置数据表 
+- 进入绝对路径`C:/Users/Micateam/Desktop/youloge/composer/public`目录下新增文件`youloge.sqlite.json`
 -  `Sqlite 是以为文件作为数据库`，一个文件就是一个完整的数据库，你`必须做到`预先把数据表设计好：
 - 支持复杂目录`www/hello/word.user` 点文件夹也支持* `.user` 别和`app.php > format` 重复防止`同名文件夹-文件名`
 - 后续考虑`sqlite 配置`整合到`absolute 绝对路径里`去加载，可以更好的分布式共享：例如丢到`挂载盘共享`
 
-位置：config/plugin/youloge/sqlite.php
-```php
+```json
 /**
  * 判断标准 键值为数组 键名代表目录名
  * 判断标准 键值为字符 键名代表数据库表名
  */
-return [
-  'init'=>'uuid text(64) primary key,name varhcar(32),avatar varhcar(128),mail varhcar(128),created text(12),updated text(12)',
-  // 这个文件夹预插件保留 为以后扩展做准备 你可以使用`logs`文件夹的子目录
-  'logs'=>[
-    'info'=>'uuid text(64) primary key,name varhcar(32),avatar varhcar(128),mail varhcar(128),created text(12),updated text(12)',
-  ],
-];
+{
+  "init":"id INT PRIMARY KEY AUTOINCREMENT,name varhcar(32),avatar varhcar(128),mail varhcar(128)",
+  "test":"id INT PRIMARY KEY AUTOINCREMENT,name varhcar(32),avatar varhcar(128),mail varhcar(128)",
+  "www.site":{
+    "hello":"id INT PRIMARY KEY AUTOINCREMENT,avatar varhcar(128),mail varhcar(128),created text(12)",
+    "word":"id INT PRIMARY KEY AUTOINCREMENT,name varhcar(32),avatar varhcar(128),mail varhcar(128)",
+    "ok":{
+      "no":"id INT PRIMARY KEY AUTOINCREMENT,state varhcar(128)",
+    }
+  },
+  "open.site":{
+    "info":"id INT PRIMARY KEY AUTOINCREMENT,state varhcar(128),created text(12)"
+  }
+}
+
 ```
-
-
+> `youloge.sqlite.json` 文件数据表配置，要仔细：数据库表一旦建立了，修改更改表会十分的麻烦+蛋疼
+- $db = sqlite('/','db001'); 会在`绝对路径`目录下新建一个`db001.db`文件，自动创建二张表`init`和`test`
+- $db = sqlite('www.site/ok','db002'); 会在`绝对路径/www.site/ok`目录下新建一个`db002.db`文件，自动创建一张表`no`
 
 ### 开始使用 
 
-#### 以相对路径 目录`hello/word` 文件`profile` 表名`user,login，wallet` 为例
-
-连接数据库
-
+#### 连接数据库
+- 相对路径 目录`open.site` 文件`youloge` 表名`info` 为例
+``` php
+$db = sqlite('open.site','youloge');
+sqlite::version(); // 静态调用
 ```
-// 必须与config/plugin/youloge/sqlite.php配置文件对应
-$db = sqlite('目录/目录','文件名','表名');
-$db = sqlite('/','文件名','表名'); // 根目录
-$db = sqlite(':','文件名','表名'); // 根目录
-$db = sqlite('.','文件名','表名'); // 根目录
-```
-#### 插入数据
+#### 插入数据 `$table, $data`
 插入一条数据
 ``` php
-$insert = sqlite('hello/word','profile','user')
-          ->set(['id'=>100,'name'=>'name'])
-          ->insert();
+$insert = sqlite->insert('info',['state'=>'正常']);
 echo $insert; // 返回插入的行数 行数 ≠ 自增ID
 ```
 插入多条数据
 ``` php
-$insert = sqlite('hello/word','profile','user')
-          ->set(
-            [
-              ['id'=>100,'name'=>'name'],
-              ['id'=>101,'name'=>'name'],
-              ['id'=>102,'name'=>'name']
-            ]
-          )
-          ->insert(true);
-echo $insert; // insert(true) 返回的是插入语句：专门用来检查语句的。
+$insert = sqlite->insert('info',[['state'=>'正常'],['state'=>'正常'],['state'=>'正常']]);
+echo $insert; // 返回插入的行数 行数 ≠ 自增ID
 ```
-#### 更新数据
+#### 更新数据 `$table, $data, $where`
 一般更新
 ``` php
-$update = sqlite('hello/word','profile','user')
-          ->set(['name'=>'newname'])
-          ->where(['id'=>100])
-          ->update();
+$update = sqlite->update('info',['state'=>'禁言'],['id'=>1]);
 echo $update; // 返回1,0
 ```
-特殊更新 - 更新`name`为`null`的行
+特殊更新 
 ``` php
-$update = sqlite('hello/word','profile','user')
-          ->set(['name'=>'hello'])
-          ->where([],['name is null']) // where 注意第一个参数
-          ->update();
+$update = sqlite->update('info',['state'=>'禁言'],['id > 5','state'=>'正常']);
 echo $update; // 返回1,0
 ```
-#### 删除数据
-一般更新
+#### 删除数据 `$table,$where`
+
 ``` php
-$delete = sqlite('hello/word','profile','user')
-          ->where(['id'=>100])
-          ->delete();
+$delete = sqlite->delete('info',['state'=>'禁言']); // 键值对
+$delete = sqlite->delete('info',['state IS NULL']); // 纯数组
 echo $delete; // 返回1,0
 ```
-#### 查询数据
-单条查询 - 
+#### 单条查询 `$table, $columns, $where` 可选`$order=false`
+- row_array
 ``` php
-$row_array = sqlite('hello/word','profile','user')
-          ->where(['id'=>100])
-          ->row_array();
+$row_array = sqlite->row_array('info','*',['id'=>100]);
+$row_array = sqlite->row_array('info',['*','id as uuid'],['id < 100','state'=>'正常'],'created desc');
 echo $row_array; // []
 ```
-多条查询 - 
+#### 多条查询 `$table, $columns, $where,$limit=10,$offset=0,$order=false`
+- result_array
 ``` php
-$result_array = sqlite('hello/word','profile','user')
-          ->where(['id'=>100])
-          ->result_array();
+$result_array = sqlite->result_array('info','*',['id'=>100],10,0);
 echo $result_array; // []
 ```
-统计查询 - 好用但是数据多了 这玩意肯定卡~
+#### 统计查询 `$table, $columns, $where,$limit=10,$offset=0,$order=false`
+- 好用但是数据多了 这玩意肯定卡~
 ``` php
-$count_array = sqlite('hello/word','profile','user')
-          ->where(['id'=>100])
-          ->count_array();
-echo $count_array; // ['list'=>[],'count'=>0];
+$count_array = sqlite->count_array('info','*',['id'=>100],10,0);
+echo $count_array; // ['list'=>[],'count'=>0,'limit'=>10,'offset'=>0];
 ```
+> 1.0.2 旧版是链式调用的：因为webman是常驻内存，类只加载一次，我写不好连接池所以2.0.0之后废弃链式调用
 
-### 链式调用支持的选项  注意：`where` 和 `set`
-
-- (int)`limit` - 条数默认 10  `row_array`时不生效
-- (int)`offset` - 偏移量 默认 0
-- []`order` - 设置排序 默认空 `id desc` `id asc` 只支持
-- ([][])`where` - [参数一],[参数二] 参数一：转成 `'key'`=`'val'`在`AND`,参数二：直接`AND`
-- ([]/[[],[]])`set` - 设置数据[] `insert` 解析成 SET`keys`VALUE(`values`),(`values`);`update`解析成`key`=`val`
-- (string)`table` - 切换表名  一个表文件可以有多个表：这里的切换表，不验证表是否存在*
-
-
-> 链式调用相同配置，只有最后一组生效 $db()->limit(50)->limit(40)->limit(20)->result_array(); // 只生效limit(20)
-
-> 数据表`where 条件 [参数二]` 原样输入, 例如`id > 100`和`time >= 10000`等参数
-
-### 调用结果函数
+### 扩展函数 `-> 箭头调用`官方是`:: 静态调用`
 - `insert` - 插入数据
 - `update` - 更新数据
 - `delete` - 删除数据
@@ -168,13 +148,13 @@ echo $count_array; // ['list'=>[],'count'=>0];
 - `result_array` - 多条查询
 - `count_array` - 统计查询
 
-> 结果函数最后调用 配置`true`参数，代表返回`sqlite`语句
-
-
-### 数据库连接句柄
+### 原生连接句柄
 ```
-$pdo = sqlite('hello/word','profile','user')->PDO();
-$pdo->exec();
-$pdo->close(); // 可以不要
+$pdo = sqlite('hello/word','profile');
+$pdo::exec();
+$pdo::query();
+$pdo::close();
+$pdo::busyTimeout();
 ```
-> 可以不用关闭，调用结束插件自己会销毁
+
+> 关于交流打赏：VX：`micateam`
