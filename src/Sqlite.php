@@ -6,7 +6,7 @@ use Webman\Exception;
 // #[\ReturnTypeWillChange]
 class Sqlite extends \SQLite3{
   function __construct($dir,$file){
-    @['database'=>$database,'fields'=>$fields] = Config::initialize($dir,$file,$table);
+    @['database'=>$database,'fields'=>$fields] = Config::initialize($dir,$file);
     $open = self::open($database);
     // 文件初始表
     foreach($fields as $key=>$val){
