@@ -11,7 +11,7 @@ Sqlite3 插件：它是对标`fopen 函数`的，性能还是不错了，像一�
 
 ### 项目地址
 
-[Github Youloge.sqlite](https://github.com/youloge/youloge.sqlite) Star我 `我们一起做大做强`
+[Github Youloge.sqlite](https://github.com/youfeed/sqlite) Star我 `我们一起做大做强`
 
 ### 安装
 
