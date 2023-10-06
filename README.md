@@ -13,6 +13,8 @@ Sqlite3 插件：它是对标`fopen 函数`的，性能还是不错了，像一�
 
 [Github Youloge.sqlite](https://github.com/youfeed/sqlite) Star我 `我们一起做大做强`
 
+- 2.0.4 修复 `row_array`的排序查询BUG
+
 ### 安装
 
 ```php

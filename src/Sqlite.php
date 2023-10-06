@@ -61,7 +61,7 @@ class Sqlite extends \SQLite3{
       $wheres[] = is_string($key) ? sprintf("`%s` = %s",$key,is_string($val) ? "'$val'" : $val) : $val;
     }
     $whered = implode(' AND ',$wheres);
-    $orderd = $order ? implode(' AND ',$order) : '';
+    $orderd = $order ? sprintf("ORDER BY %s",is_string($order) ? $order : implode(',',$order)) : '';
     $string = sprintf("SELECT %s FROM %s WHERE %s %s",$columns,$table,$whered,$orderd);
     return @self::querySingle($string,true);
   }
