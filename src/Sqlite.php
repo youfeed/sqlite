@@ -90,11 +90,11 @@ class Sqlite extends \SQLite3{
     $list = $this->result(self::query($string));
     return ['count'=>$count,'limit'=>$limit,'offset'=>$offset,'list'=>$list];
   }
-  // 
+  // 如果值为 JSON字符串 用json_encode($html,JSON_HEX_APOS)转义
   private function json_trim($array){
     return [
       sprintf("(%s)",trim(json_encode(array_keys($array),320),'[]')),
-      sprintf("(%s)",trim(json_encode(array_values($array),320),'[]'))
+      sprintf("('%s')",implode("','",array_values($array)))
     ];
   }
   //
